@@ -26,19 +26,13 @@ class MovieDataAggregator:
         essentially a full database.
         individual user ratings are aggregated so we get an averte rating and a rating count.
         """
-        files = ["movies", "ratings", "links", "imdb_img"]
-        #files = ["movies", "ratings", "links"]
+        files = ["movies", "ratings_agg", "links", "imdb_img"]
         for f in files:
             df = self._build_df_from_csv(f)
             setattr(self, f"df_{f}", df)
-
         df1 = pd.merge(self.df_movies, self.df_links, on="movieId")
+        df2 = pd.merge(df1, self.df_ratings_agg, on="movieId")
 
-        temp_df = self.df_ratings.groupby('movieId').agg(rating_count=(
-            'rating', 'size'), rating_mean=('rating', 'mean')).reset_index()
-        temp_df.set_index('movieId', inplace=True)
-
-        df2 = pd.merge(df1, temp_df, on="movieId")
         # shape (53889, 7)
         self.df = df2
         return df2

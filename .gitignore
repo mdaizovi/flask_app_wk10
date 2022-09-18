@@ -133,8 +133,6 @@ dmypy.json
 
 #Large files 
 .jar
-.csv
-data/
 
 # credentials
 credentials.py
