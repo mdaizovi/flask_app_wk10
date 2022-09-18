@@ -7,7 +7,7 @@ import random
 from wtforms import StringField, SubmitField, SelectField, StringField, Form
 from wtforms.validators import DataRequired
 
-from simple_recommender import get_recommendations
+from recommender import MovieRecommender
 from movie_data_aggregator import MovieDataAggregator
 
 mda = MovieDataAggregator()
@@ -72,7 +72,7 @@ def recommender():
 
         print(f"\n\n  movie_ratings { movie_ratings}")
 
-        recs = get_recommendations()
+        recs = MovieRecommender.get_generic_recommendations()
         form = None
     else:
         recs = None
