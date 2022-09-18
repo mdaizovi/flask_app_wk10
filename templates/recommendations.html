@@ -1,0 +1,100 @@
+{% extends "layout.html" %}
+
+{% block title %}Awesome Movie Recommender{% endblock %}
+
+{% block head %}
+  {{ super() }}
+  <link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/themes/ui-lightness/jquery-ui.css"
+      rel="stylesheet" type="text/css" />  
+<!-- <link rel="stylesheet" href="//code.jquery.com/ui/1.10.4/themes/smoothness/jquery-ui.css"> -->
+
+{% endblock %}
+
+{% block content %}
+
+{% if recommended %}
+<section class="jumbotron text-center">
+  <div class="container">
+    <h1 class="jumbotron-heading">Recommendations</h1>
+    <h2> Here are your recommended movies:</h2>
+    <hr>
+    <ul class="list-group">
+      {% for r in recommended %}
+        <a href = "" style = "color: #7fd9e2;"">
+          <li class="list-group-item"><h3>{{ r }}</h3></li>
+        </a>
+      {% endfor %} 
+    </ul>
+ <hr>
+  <p>
+    <a href="/">Go back to main page</a>
+  </p>
+  </div>
+</section>
+{% else %}
+
+<section class="jumbotron text-center">
+  <div class="container">
+    <h1 class="jumbotron-heading">Help us get to know you!</h1>
+    <p class="lead text-muted">
+      Please select 5 movies to rate, so we can learn your preferences.
+    </p>
+  </div>
+</section>
+
+{% endif %}
+
+
+{% if form %}
+    <form method="POST" role="form" class = "text-center">
+
+      {% for field in form if field.widget.input_type != 'hidden'%}
+      <p>
+        {{ field.label }}
+        {{ field }}
+        <span>
+          {% if field.errors %}
+            {% for error in field.errors %}
+              {{ error }}
+            {% endfor %}
+          {% endif %}
+        </span>
+      </p>
+      {% endfor %}
+      <button class="btn btn-primary my-2" style = "background-color: #7fd9e2; border: 1px solid #7fd9e2;" type="submit">Submit!</button>
+    </form>
+{% endif %}
+
+    
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+
+<script type="text/javascript" src="http://code.jquery.com/jquery-latest.js"></script>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.js"></script>
+
+
+
+<script>
+  $(function() {
+      $.ajax({
+          url: '{{ url_for("autocomplete") }}'
+          }).done(function (data){
+
+              $('#movie_autocomplete_1').autocomplete({
+                  source: data,
+                  minLength: 3
+              });
+              $('#movie_autocomplete_2').autocomplete({
+                  source: data,
+                  minLength: 3
+              });
+              $('#movie_autocomplete_3').autocomplete({
+                  source: data,
+                  minLength: 3
+              });
+          });
+      });
+</script>
+{% endblock %}

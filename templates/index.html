@@ -1,0 +1,49 @@
+{% extends "layout.html" %}
+{% block title %}Awesome Movie Recommender{% endblock %}
+{% block head %}
+  {{ super() }}
+{% endblock %}
+
+{% block content %}
+<section class="jumbotron text-center">
+  <div class="container">
+    <h1 class="jumbotron-heading">Extra 🌶️ Spicy 🌶️<br>Movie Recommender</h1>
+    <p>
+      <a href="/recommender" class="btn btn-primary my-2" style = "background-color: #7fd9e2; border: 1px solid #7fd9e2;">Get movie recommendations!</a>
+      <a href="https://www.spiced-academy.com/en" target="_blank" class="btn btn-secondary my-2" style = " background-color: #3f0097;
+        border: 1px solid #3f0097;">Learn more about Spiced Academy</a>
+    </p>
+  </div>
+</section>
+
+
+    <div class="album py-5 bg-light">
+      <div class="container">
+
+        <div class="row">
+          {% for m in top_titles %}
+          <div class="col-md-4">
+            <div class="card mb-4 box-shadow">
+              <img class="card-img-top" style = "height: 525px;" src="{{m['img']}}" alt="{{m['title']}}">
+              <div class="card-body" style = "height: 100px;">
+                <p class="card-text" style = "text-align: center;">{{ m['title'] }}</p>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+
+
+        </div>
+      </div>
+    </div>
+
+
+
+
+  </div>
+</section>
+
+
+
+  
+{% endblock %}
