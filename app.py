@@ -16,7 +16,6 @@ img_df = mda._build_imdb_image_df()
 img_df.set_index('title', inplace=True)
 MOVIE_IMG_DICT = img_df.to_dict()["img"]
 MOVIES = list(mda.df["title"].unique())
-
 MOST_POPULAR_DICT = mda.get_most_popular_movies().to_dict()
 MOST_POPULAR = list(MOST_POPULAR_DICT['title'].keys())
 
@@ -83,13 +82,13 @@ def recommender():
                            movies=MOVIES, recommended=recs, form=form)
 
 
-# run with 'python application.py'
+# run with 'python app.py'
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
 
 
 # Alternately:
 # every time we start new terminal
-# `export FLASK_APP=application.py`
+# `export FLASK_APP=app.py`
 #  `export FLASK_DEBUG=1`
 # `flask run`
