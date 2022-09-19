@@ -34,7 +34,7 @@ class MovieRecommender:
         den = np.sqrt(np.sum(x**2)) * np.sqrt(np.sum(y**2))
         return num/den
 
-    def get_ids_of_users_who_saw_same_movies(self, user_ratings_dict, min=1):
+    def get_ids_of_users_who_saw_same_movies(self, user_ratings_dict):
         """
         Receives raw dict of {title:rating}
         gets movieId,
@@ -45,10 +45,9 @@ class MovieRecommender:
         movie_id_list = [int(self.mda.reverse_movie_map.get(
             x)) for x in movie_title_list]
 
-        # TODO: get dfs of users who saw 1 same movie, 2 same movies, etc up to 5.
-        # my dataset is way too damn big and it takes forever.
         neighboring_users_df = self.mda.df_ratings[self.mda.df_ratings['movieId'].isin(
             movie_id_list)]
+
         return list(neighboring_users_df["userId"].unique())
 
     def get_reviews_df_by_user_id_list(self, user_id_list):
@@ -69,7 +68,10 @@ class MovieRecommender:
                               columns='movieId',
                               values='rating')
 
-    def get_user_nbc_recommendations(self, user_ratings_dict):
+    def convert_df_to_movie_id_list(df):
+        return df['movieId'].values.tolist()
+
+    def get_user_nbc_recommendations(self, user_ratings_dict, max_neighbors=20):
 
         user_movie_title_list = list(user_ratings_dict.keys())
         user_movie_id_list = [int(self.mda.reverse_movie_map.get(
@@ -109,6 +111,14 @@ class MovieRecommender:
         cosim_df = pd.DataFrame(
             data=cosim_data, columns=cosim_columns)
         cosim_df.set_index('userId', inplace=True)
+        cosim_df = cosim_df.sort_values('cosim', ascending=False)
+
+        # This takes too damn long. user a shorter list of closest users (max_neighbors)
+        if cosim_df.shape[0] > max_neighbors:
+            closest_neighbors = cosim_df.head(max_neighbors)
+        else:
+            closest_neighbors = cosim_df
+        closest_neighbor_ids = list(closest_neighbors.index.values)
 
         # # get list of unseen movies
         unseen_movie_ids = list(neighbors_reviews_df[~neighbors_reviews_df['movieId'].isin(
@@ -117,12 +127,11 @@ class MovieRecommender:
         # This is super time consuming!
         predicted_ratings = []
         for movie in unseen_movie_ids:
-            print(f"movie is {movie}")
             num = 0
             den = 0
-            for user in neighboring_users_list:
+            for user in closest_neighbor_ids:
                 # capture rating for this `user'
-                similarity = cosim_df.loc[user, "cosim"]
+                similarity = closest_neighbors.loc[user, "cosim"]
                 try:
                     user_rating = ratings_df.loc[user, movie]
                     num += user_rating * similarity
@@ -138,6 +147,8 @@ class MovieRecommender:
         # Make df of movie scores
         predicted_rating_df = pd.DataFrame(
             predicted_ratings, columns=["movie", "rating"]).sort_values('rating', ascending=False)
+        print(f"shape of predicted_rating_df {predicted_rating_df.shape}")
+        print(f"head of predicted_rating_df {predicted_rating_df.head()}")
         return predicted_rating_df.head(3)
 
     def get_generic_recommendations(self):

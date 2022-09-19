@@ -19,10 +19,12 @@
     <h2> Here are your recommended movies:</h2>
     <hr>
     <ul class="list-group">
-      {% for r in recommended %}
-        <a href = "" style = "color: #7fd9e2;"">
-          <li class="list-group-item"><h3>{{ r }}</h3></li>
+      {% for d in recommended %}
+        {% for key, value in d.items() %}
+        <a href = "https://www.imdb.com/title/{{ value }}/" style = "color: #7fd9e2;"">
+          <li class="list-group-item"><h3>{{ key }}</h3></li>
         </a>
+        {% endfor %}  
       {% endfor %} 
     </ul>
  <hr>

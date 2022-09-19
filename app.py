@@ -19,6 +19,8 @@ MOVIES = list(mda.df["title"].unique())
 MOST_POPULAR_DICT = mda.get_most_popular_movies().to_dict()
 MOST_POPULAR = list(MOST_POPULAR_DICT['title'].keys())
 
+MOVIE_IMDB_DICT = mda.df_links.to_dict()["imdbId"]
+
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'my-top-secret-string'
@@ -72,7 +74,17 @@ def recommender():
             movie_title = form_results.get(f"autocomp_{i+1}")[0]
             movie_rating = form_results.get(f"rating_{i+1}")[0]
             movie_ratings[movie_title] = movie_rating
-        recs = MovieRecommender.get_generic_recommendations()
+        mr = MovieRecommender(mda=mda)
+        recs_df = mr.get_user_nbc_recommendations(
+            movie_ratings, max_neighbors=40)
+        rec_id_list = list(recs_df.index.values)
+        recs = []
+        for m in rec_id_list:
+            title = mda.movie_map.get(m)
+            imdb_id = MOVIE_IMDB_DICT.get(m)
+            imdb_clean = mda.format_imdb_id(imdb_id)
+            recs.append({title: imdb_clean})
+
         form = None
     else:
         recs = None
