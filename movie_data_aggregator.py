@@ -39,23 +39,24 @@ class MovieDataAggregator:
                          index_col=0)
         return df
 
-    # TODO make one master movie df and another rating df. Right?
     def _build_master_df(self):
         """"
         Builds one large dataframe from several smaller ones;
         essentially a full database.
         individual user ratings are aggregated so we get an averte rating and a rating count.
         """
-        files = ["movies", "ratings", "ratings_agg", "links", "imdb_img"]
+        #files = ["movies", "ratings", "ratings_agg", "links", "imdb_img"]
+        files = ["movies", "ratings", "ratings_agg", "imdb_img"]
         for f in files:
             df = self._build_df_from_csv(f)
             setattr(self, f"df_{f}", df)
-        df1 = pd.merge(self.df_movies, self.df_links, on="movieId")
-        df2 = pd.merge(df1, self.df_ratings_agg, on="movieId")
 
-        # # shape (53889, 7) with big dataset!
-        self.df = df2
-        return df2
+        # drop timestamp, haven't found a use for it
+        self.df_ratings.reset_index().rename(columns={'index': 'userId'})
+        self.df_ratings.reset_index(inplace=True)
+        self.df_ratings.drop(columns=["timestamp"], inplace=True)
+
+        self.df = pd.merge(self.df_movies, self.df_ratings_agg, on="movieId")
 
     def _aggregate_ratings_to_csv(self):
         """

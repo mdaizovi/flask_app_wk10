@@ -39,6 +39,12 @@ class MovieForm(Form):
     autocomp_3 = StringField(text2, id='movie_autocomplete_3')
     rating_3 = SelectField(text1, choices=choices,
                            validators=[DataRequired()])
+    autocomp_4 = StringField(text2, id='movie_autocomplete_4')
+    rating_4 = SelectField(text1, choices=choices,
+                           validators=[DataRequired()])
+    autocomp_5 = StringField(text2, id='movie_autocomplete_5')
+    rating_5 = SelectField(text1, choices=choices,
+                           validators=[DataRequired()])
 
 
 @app.route('/_autocomplete', methods=['GET'])
@@ -52,7 +58,6 @@ def index():
         list(MOVIE_IMG_DICT.keys()), size=3, replace=True)
     top_titles = [
         {"title": x, "img": MOVIE_IMG_DICT.get(x)} for x in random_keys]
-    print(f"'n'ntop_titles {top_titles}")
     return render_template('index.html', top_titles=top_titles)
 
 
@@ -63,20 +68,15 @@ def recommender():
         # Enter your function POST behavior here
         movie_ratings = {}
         form_results = request.form.to_dict(flat=False)
-        print(f"\n\nform_results {form_results}")
-        for i in range(3):
+        for i in range(5):
             movie_title = form_results.get(f"autocomp_{i+1}")[0]
             movie_rating = form_results.get(f"rating_{i+1}")[0]
             movie_ratings[movie_title] = movie_rating
-
-        print(f"\n\n  movie_ratings { movie_ratings}")
-
         recs = MovieRecommender.get_generic_recommendations()
         form = None
     else:
         recs = None
         form = MovieForm()
-        print(form)
 
     return render_template('recommendations.html',
                            movies=MOVIES, recommended=recs, form=form)
