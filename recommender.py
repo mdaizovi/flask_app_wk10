@@ -1,3 +1,4 @@
+from textwrap import fill
 import numpy as np
 import pandas as pd
 import random
@@ -33,23 +34,7 @@ class MovieRecommender:
         den = np.sqrt(np.sum(x**2)) * np.sqrt(np.sum(y**2))
         return num/den
 
-    # def similarity_table(self, neighboring_users_df, new_user_df):
-
-    #     # We want to create user pairs of cosine similarities
-    #     # Initialize an empty list that shall contain all user pair lists
-    #     all_user_pairs = []
-    #     # We shall go through every user and capture the indices between this user and the rest of the users
-    #     users = list(neighboring_users_df.index)
-    #     for user in users:
-    #         # Initialize another empty list to capture user-users indices
-    #         single_user_list = []
-    #         for single_user in users:
-    #             single_user_list.append(
-    #                 MovieRecommender.cosim(new_user_df.loc[user], new_user_df.loc[single_user]))
-    #         all_user_pairs.append(single_user_list)
-    #     return pd.DataFrame(all_user_pairs, columns=neighboring_users_df.index, index=list(neighboring_users_df.index))
-
-    def get_ids_of_users_who_saw_same_movies(self, user_ratings_dict):
+    def get_ids_of_users_who_saw_same_movies(self, user_ratings_dict, min=1):
         """
         Receives raw dict of {title:rating}
         gets movieId,
@@ -60,6 +45,8 @@ class MovieRecommender:
         movie_id_list = [int(self.mda.reverse_movie_map.get(
             x)) for x in movie_title_list]
 
+        # TODO: get dfs of users who saw 1 same movie, 2 same movies, etc up to 5.
+        # my dataset is way too damn big and it takes forever.
         neighboring_users_df = self.mda.df_ratings[self.mda.df_ratings['movieId'].isin(
             movie_id_list)]
         return list(neighboring_users_df["userId"].unique())
@@ -82,9 +69,6 @@ class MovieRecommender:
                               columns='movieId',
                               values='rating')
 
-
-# WIP WIP WIP WIP
-
     def get_user_nbc_recommendations(self, user_ratings_dict):
 
         user_movie_title_list = list(user_ratings_dict.keys())
@@ -96,9 +80,6 @@ class MovieRecommender:
         # make a dataframe of only reviews by users who have seen at least one of same movie as our user.
         neighbors_reviews_df = self.get_reviews_df_by_user_id_list(
             neighboring_users_list)
-        print("\nneighbors_reviews_df.head")
-        print(neighbors_reviews_df.head())
-        print(neighbors_reviews_df.shape)
 
         # make a dataframe that includes our user as well as the other user reviews
         dummy_id = 99999999  # arbitrary high userId that I know doesn't exist
@@ -108,39 +89,56 @@ class MovieRecommender:
             row = [dummy_id, self.mda.reverse_movie_map.get(k), v]
             data.append(row)
         user_ratings_df = pd.DataFrame(data, columns=columns)
-        print("\nuser_ratings_df")
-        print(user_ratings_df.head())
-        print(user_ratings_df.shape)
 
         neighbors_reviews_df = pd.concat(
             [neighbors_reviews_df, user_ratings_df], ignore_index=True, sort=False)
-        print("\nneighbors_reviews_df.head again")
-        print(neighbors_reviews_df.head())
-        print(neighbors_reviews_df.shape)
-        print("\nand now the tai;")
-        print(neighbors_reviews_df.tail())
-
         reshaped_df = self.reshape_ratings_df(neighbors_reviews_df)
-        print("reshaped_df.head()")
-        print(reshaped_df.head())
-        print(reshaped_df.shape)
 
-        print("sanity check: how many unique users, how many unique movies?")
-        print("users")
-        print(len(neighbors_reviews_df["userId"].unique()))
-        print("movies")
-        print(len(neighbors_reviews_df["movieId"].unique()))
+        fill_value = 0  # or should i do average score?
+        imputer = SimpleImputer(strategy="constant", fill_value=fill_value)
+        ratings_df = pd.DataFrame(imputer.fit_transform(
+            reshaped_df), columns=reshaped_df.columns, index=list(reshaped_df.index))
 
-        # imputer = SimpleImputer(strategy="constant", fill_value=0)
-        # ratings_df = pd.DataFrame(imputer.fit_transform(reshaped_df), columns=reshaped_df.columns, index=list(reshaped_df.index))
+        # Make cosine simularity table between our user and other users
+        cosim_columns = ["userId", "cosim"]
+        cosim_data = []
+        for u in neighboring_users_list:
+            similarity = MovieRecommender.cosim(
+                ratings_df.loc[u], ratings_df.loc[dummy_id])
+            cosim_data.append([u, similarity])
+        cosim_df = pd.DataFrame(
+            data=cosim_data, columns=cosim_columns)
+        cosim_df.set_index('userId', inplace=True)
 
-        # Find users with high cosine similarity, and use each other's ratings to recommend movies the other hasn't seen
-        # Extend this to a couple of neighbours:
-        # Use average ratings of those highly similar users:
-        # sum(ratings)/N
-        # Use weighted average of their ratings:
-        # sum(similarity * rating)/sum(similarity)
-        # Extend this to all users and use weighted average
+        # # get list of unseen movies
+        unseen_movie_ids = list(neighbors_reviews_df[~neighbors_reviews_df['movieId'].isin(
+            user_movie_id_list)]["movieId"].unique())
+        # for each unseen movie, get user who also saw it and calculate av. rating
+        # This is super time consuming!
+        predicted_ratings = []
+        for movie in unseen_movie_ids:
+            print(f"movie is {movie}")
+            num = 0
+            den = 0
+            for user in neighboring_users_list:
+                # capture rating for this `user'
+                similarity = cosim_df.loc[user, "cosim"]
+                try:
+                    user_rating = ratings_df.loc[user, movie]
+                    num += user_rating * similarity
+                    den += similarity
+                except KeyError:
+                    # if user didn't see this movie
+                    pass
+            if den != 0:
+                predicted_rating = num/den
+            else:
+                predicted_rating = 0
+            predicted_ratings.append((movie, predicted_rating))
+        # Make df of movie scores
+        predicted_rating_df = pd.DataFrame(
+            predicted_ratings, columns=["movie", "rating"]).sort_values('rating', ascending=False)
+        return predicted_rating_df.head(3)
 
     def get_generic_recommendations(self):
         movies = random.shuffle(self.generic_popular_movies)
