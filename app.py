@@ -19,15 +19,28 @@ MOVIES = list(mda.df["title"].unique())
 MOST_POPULAR_DICT = mda.get_most_popular_movies().to_dict()
 MOST_POPULAR = list(MOST_POPULAR_DICT['title'].keys())
 
-MOVIE_IMDB_DICT = mda.df_links.to_dict()["imdbId"]
-
-
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'my-top-secret-string'
 bootstrap = Bootstrap4(app)
 
 
 class MovieForm(Form):
+
+    # I wish this worked
+    # def __init__(self, **kwargs):
+    #     super().__init__()
+    #     text1 = 'Please rate movie from 1-5'
+    #     text2 = 'Insert Movie Title'
+    #     choices = [(n, n) for n in range(1, 6)]
+
+    #     for i in range(5):
+    #         a = 'autocomp_' + str(i+1)
+    #         r = 'rating_' + str(i+1)
+    #         f_id = f"movie_{a}"
+    #         setattr(self, a, StringField(text2, id=f_id))
+    #         setattr(self, r, SelectField(text1, choices=choices,
+    #                                      validators=[DataRequired()]))
+
     text1 = 'Please rate movie from 1-5'
     text2 = 'Insert Movie Title'
     choices = [(n, n) for n in range(1, 6)]
@@ -70,20 +83,17 @@ def recommender():
         # Enter your function POST behavior here
         movie_ratings = {}
         form_results = request.form.to_dict(flat=False)
+        print(f"\n\n---FORM---\n{form_results}\n")
         for i in range(5):
             movie_title = form_results.get(f"autocomp_{i+1}")[0]
             movie_rating = form_results.get(f"rating_{i+1}")[0]
             movie_ratings[movie_title] = movie_rating
+
         mr = MovieRecommender(mda=mda)
         recs_df = mr.get_user_nbc_recommendations(
-            movie_ratings, max_neighbors=40)
-        rec_id_list = list(recs_df.index.values)
-        recs = []
-        for m in rec_id_list:
-            title = mda.movie_map.get(m)
-            imdb_id = MOVIE_IMDB_DICT.get(m)
-            imdb_clean = mda.format_imdb_id(imdb_id)
-            recs.append({title: imdb_clean})
+            movie_ratings, max_neighbors=25)
+        recs = mda.convert_movie_is_list_to_title_imdb_dict(
+            list(recs_df.index.values))
 
         form = None
     else:

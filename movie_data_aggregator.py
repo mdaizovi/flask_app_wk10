@@ -1,8 +1,5 @@
-import numpy as np
 import pandas as pd
 import requests
-
-from sklearn.impute import SimpleImputer
 
 from settings import DATA_DIR
 
@@ -13,6 +10,7 @@ class MovieDataAggregator:
         self._build_master_df()
         self.movie_map = self._build_movie_map()
         self.reverse_movie_map = self._build_reverse_movie_map()
+        self.imdb_dict = self.df_links.to_dict()["imdbId"]
 
     @property
     def __data_dir__(self):
@@ -146,3 +144,12 @@ class MovieDataAggregator:
             return j[json_key]
         else:
             print(f"\n\n{j}\n\n")
+
+    def convert_movie_is_list_to_title_imdb_dict(self,id_list):
+        recs = []
+        for m in id_list:
+            title = self.movie_map.get(m)
+            imdb_id = self.imdb_dict.get(m)
+            imdb_clean = self.format_imdb_id(imdb_id)
+            recs.append({title: imdb_clean})
+        return recs
